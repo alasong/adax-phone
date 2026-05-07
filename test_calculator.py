@@ -13,5 +13,5 @@ class Calculator:
     
     def divide(self, a, b):
         if b == 0:
-            raise ZeroDivisionError("除数不能为零")
+            raise ValueError("除数不能为零")
         return a / b
