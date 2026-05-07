@@ -1,0 +1,45 @@
+id: bug_fix
+name: 标准 Bug 修复流程
+description: 基于 RCA 根本原因分析的完整 Bug 修复流程：复现→诊断→修复→验证
+version: '1.0'
+author: Super Coder
+max_parallel: 4
+variables:
+  feature_name: 新功能
+  target_file: app.py
+tasks:
+- id: reproduce_bug
+  name: 复现 Bug
+  description: 在开发环境中复现问题，确认现象
+  tool: script
+  instruction: print('✅ Bug 复现成功')
+  parallel: false
+- id: diagnose_root_cause
+  name: 诊断根因
+  description: 使用 5 Whys/鱼骨图找到根本原因
+  tool: script
+  instruction: print('✅ 根因找到')
+  depends_on:
+  - reproduce_bug
+- id: implement_fix
+  name: 实现修复
+  description: 编写修复代码
+  tool: script
+  instruction: print('✅ 修复代码完成')
+  depends_on:
+  - diagnose_root_cause
+  max_retries: 2
+- id: verify_fix
+  name: 验证修复
+  description: 测试验证问题是否真正解决
+  tool: script
+  instruction: print('✅ 修复验证通过')
+  depends_on:
+  - implement_fix
+- id: cleanup_and_document
+  name: 清理与文档
+  description: 清理临时代码，更新文档，添加测试用例
+  tool: script
+  instruction: print('✅ 清理与文档完成')
+  depends_on:
+  - verify_fix

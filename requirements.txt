@@ -1,0 +1,14 @@
+# 超级Coding工具 - 依赖包
+
+# Aider (核心工具)
+aider-chat>=0.85.0
+
+# YAML支持
+PyYAML>=6.0
+
+# JSON Schema验证
+jsonschema>=4.21.0
+
+# 可选: 添加其他工具支持
+# claude-code>=...
+# openai>=...

@@ -1,0 +1,27 @@
+{
+  "project": {
+    "path": ".",
+    "auto_commit": true,
+    "iterations": 3,
+    "verbose": false
+  },
+  "tools": {
+    "aider": {
+      "enabled": true,
+      "model": "gpt-4",
+      "edit_format": "diff"
+    },
+    "claude": {
+      "enabled": false,
+      "model": "claude-3-sonnet-20240229"
+    },
+    "codex": {
+      "enabled": false,
+      "model": "gpt-4"
+    }
+  },
+  "git": {
+    "auto_push": false,
+    "commit_prefix": "super-coder:"
+  }
+}

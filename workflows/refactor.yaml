@@ -1,0 +1,114 @@
+# 代码重构工作流
+id: refactor
+name: 代码重构工作流
+description: 安全地重构和优化代码
+version: "1.0"
+author: Super Coder
+
+variables:
+  refactor_scope: "module"
+  target_files: []
+
+tasks:
+  - id: analysis
+    name: 现状分析
+    description: 分析代码现状，确定重构范围
+    tool: aider
+    instruction: |
+      分析目标代码，创建REFACTOR_PLAN.md，包含：
+      - 当前问题分析
+      - 重构目标
+      - 重构策略
+      - 风险评估
+    files: ${target_files}
+    outputs:
+      - type: file
+        format: markdown
+        path: REFACTOR_PLAN.md
+    quality_checks:
+      - rule: required
+        message: 重构计划必须制定
+
+  - id: backup
+    name: 创建备份
+    description: 创建当前状态的安全备份
+    tool: script
+    instruction: |
+      # 创建git备份分支
+      import subprocess
+      import datetime
+      
+      timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+      branch_name = f"refactor_backup_{timestamp}"
+      
+      try:
+          subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+          subprocess.run(["git", "add", "."], check=True)
+          subprocess.run(["git", "commit", "-m", f"backup before refactor: {timestamp}"], check=True)
+          print(f"✅ 已创建备份分支: {branch_name}")
+      except Exception as e:
+          print(f"⚠️  创建备份时出错: {e}")
+    depends_on: ["analysis"]
+
+  - id: refactor_step1
+    name: 第一阶段重构
+    description: 实施第一阶段重构
+    tool: aider
+    instruction: |
+      按照REFACTOR_PLAN.md进行第一阶段重构：
+      - 改善命名
+      - 提取函数/类
+      - 简化复杂逻辑
+    files: ${target_files}
+    depends_on: ["backup"]
+    quality_checks:
+      - rule: required
+        message: 第一阶段重构完成
+
+  - id: test_step1
+    name: 测试验证1
+    description: 验证第一阶段重构结果
+    tool: aider
+    instruction: |
+      运行所有相关测试，确保重构后功能正常。
+      如果有测试失败，分析并修复问题。
+    files: ${target_files}
+    depends_on: ["refactor_step1"]
+    max_retries: 2
+
+  - id: refactor_step2
+    name: 第二阶段重构
+    description: 继续深入重构
+    tool: aider
+    instruction: |
+      进行第二阶段重构：
+      - 优化性能
+      - 改善架构
+      - 增强可维护性
+    files: ${target_files}
+    depends_on: ["test_step1"]
+
+  - id: test_step2
+    name: 测试验证2
+    description: 最终验证
+    tool: aider
+    instruction: |
+      最终测试和验证：
+      - 完整测试套件通过
+      - 性能测试
+      - 代码质量检查
+    files: ${target_files}
+    depends_on: ["refactor_step2"]
+    timeout: 600
+
+  - id: complete
+    name: 完成
+    description: 重构完成总结
+    tool: script
+    instruction: |
+      print("✅ 重构工作流完成！")
+      print("📋 请检查：")
+      print("   1. 所有测试通过")
+      print("   2. 代码质量提升")
+      print("   3. 功能正常运行")
+    depends_on: ["test_step2"]

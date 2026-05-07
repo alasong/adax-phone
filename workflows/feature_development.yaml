@@ -1,0 +1,67 @@
+id: feature_development
+name: 标准功能开发流程
+description: 基于软件工程最佳实践的完整功能开发流程：需求→设计→实现→测试→部署
+version: '1.0'
+author: Super Coder
+max_parallel: 4
+variables:
+  feature_name: 新功能
+  target_file: app.py
+tasks:
+- id: requirements_analysis
+  name: 需求分析
+  description: 分析并明确功能需求，编写需求文档
+  tool: script
+  instruction: print('✅ 需求分析完成')
+  parallel: false
+- id: architecture_design
+  name: 架构设计
+  description: 设计系统架构、接口定义、数据结构
+  tool: script
+  instruction: print('✅ 架构设计完成')
+  depends_on:
+  - requirements_analysis
+  parallel: false
+- id: implementation
+  name: 代码实现
+  description: 编写功能代码，遵循编码规范
+  tool: script
+  instruction: print('✅ 代码实现完成')
+  depends_on:
+  - architecture_design
+  output_validation:
+    regex: 完成
+    assertions:
+    - 'True'
+- id: unit_test
+  name: 单元测试
+  description: 编写并运行单元测试，确保代码质量
+  tool: script
+  instruction: print('✅ 单元测试通过')
+  depends_on:
+  - implementation
+  parallel: true
+- id: integration_test
+  name: 集成测试
+  description: 进行集成测试，验证各模块协作
+  tool: script
+  instruction: print('✅ 集成测试通过')
+  depends_on:
+  - implementation
+  parallel: true
+- id: code_review
+  name: 代码评审
+  description: 进行代码审查，检查代码质量和最佳实践
+  tool: script
+  instruction: print('✅ 代码评审通过')
+  depends_on:
+  - unit_test
+  - integration_test
+  parallel: false
+- id: deployment
+  name: 部署上线
+  description: 部署到生产环境
+  tool: script
+  instruction: print('✅ 部署完成')
+  depends_on:
+  - code_review
