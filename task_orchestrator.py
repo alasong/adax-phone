@@ -529,6 +529,7 @@ class Task:
     output_validation: Optional[Dict] = None  # 输出验证规则
     few_shot_examples: List[Dict] = field(default_factory=list)  # 少量示例
     chain_of_thought: bool = True  # 是否使用思维链
+    critic: Optional[Dict] = None  # Critic Agent 审查配置
 
 
 @dataclass
@@ -667,7 +668,8 @@ class TaskParser:
             parallel=data.get("parallel", False),
             output_validation=data.get("output_validation"),
             few_shot_examples=data.get("few_shot_examples", []),
-            chain_of_thought=data.get("chain_of_thought", True)
+            chain_of_thought=data.get("chain_of_thought", True),
+            critic=data.get("critic")
         )
 
 
@@ -1171,6 +1173,18 @@ class TaskExecutor:
                     print(f"❌ 输出验证失败: {validation_errors}")
                     return result
 
+            # Critic Agent 审查（规则验证通过后）
+            if task.critic:
+                critic_result = self._run_critic_review(task, task_result)
+                result["critic_review"] = critic_result
+                if not critic_result.get("passed", True):
+                    task.status = TaskStatus.FAILED
+                    critic_errors = critic_result.get("issues", [])
+                    task.errors = critic_errors
+                    result["errors"] = critic_errors
+                    print(f"❌ Critic 审查未通过: {critic_errors}")
+                    return result
+
             # 基本质量检查
             passed, errors = self._check_quality(task, task_result)
 
@@ -1323,6 +1337,77 @@ class TaskExecutor:
             errors.append("没有文件被修改")
 
         return len(errors) == 0, errors
+
+    def _run_critic_review(self, task: Task, task_result: Dict) -> Dict:
+        """
+        运行 Critic Agent 审查
+        
+        Args:
+            task: 当前任务
+            task_result: 任务执行结果
+            
+        Returns:
+            {
+                "passed": bool,
+                "score": float,
+                "issues": List[str],
+                "summary": str
+            }
+        """
+        from critic_agent import CriticAgent, ReviewStatus
+        
+        critic_config = task.critic or {}
+        enabled = critic_config.get("enabled", True)
+        if not enabled:
+            return {"passed": True, "score": 100, "issues": [], "summary": "Critic 已禁用"}
+        
+        dimensions = critic_config.get("dimensions", ["correctness", "completeness"])
+        domain = critic_config.get("domain", "code")
+        max_rounds = critic_config.get("max_rounds", 2)
+        min_score = critic_config.get("min_score", 70)
+        
+        print(f"   🔍 启动 Critic Agent 审查（维度: {dimensions}）")
+        
+        critic = CriticAgent(min_score_to_pass=min_score)
+        
+        worker_output = task_result.get("stdout", "") or str(task_result)
+        
+        if max_rounds > 1:
+            fix_result = critic.review_and_fix(
+                task_description=task.instruction,
+                worker_output=worker_output,
+                dimensions=dimensions,
+                domain=domain,
+                max_rounds=max_rounds,
+            )
+            review = fix_result["review_result"]
+            rounds = fix_result["rounds"]
+        else:
+            review = critic.review(
+                task_description=task.instruction,
+                worker_output=worker_output,
+                dimensions=dimensions,
+                domain=domain,
+            )
+            rounds = 1
+        
+        issues = [f"[{i.severity}] {i.description}" for i in review.issues]
+        passed = review.status == ReviewStatus.PASS
+        
+        print(f"   📊 Critic 审查结果: score={review.score}/100, "
+              f"status={review.status.value}, rounds={rounds}")
+        if issues:
+            for issue in issues:
+                print(f"      - {issue}")
+        
+        return {
+            "passed": passed,
+            "score": review.score,
+            "status": review.status.value,
+            "issues": issues,
+            "summary": review.summary,
+            "rounds": rounds,
+        }
 
 
 # ============================================================
